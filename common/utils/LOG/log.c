@@ -54,13 +54,13 @@
 
 // Fixme: a better place to be shure it is called 
 void read_cpu_hardware (void) __attribute__ ((constructor));
-#if !defined(__arm__) && !defined(__aarch64__) 
+#if !defined(__arm__) && !defined(__aarch64__)
   void read_cpu_hardware (void) {__builtin_cpu_init(); }
-#else 
+#else
   void read_cpu_hardware (void) {}
 #endif
 
-  
+
 typedef struct {
   char* buf_p;
   int buf_index;
@@ -501,10 +501,13 @@ int logInit (void)
 
   for (int i = 0; i < MAX_LOG_PREDEF_COMPONENTS; i++)
     register_log_component(comp_name[i], comp_extension[i], i);
+  #ifdef ENABLE_RIC_AGENT
+    register_log_component("RIC_AGENT","log",RIC_AGENT);
+  #endif
 
   for (int i=0 ; log_level_names[i].name != NULL ; i++)
     g_log->level2string[i] = toupper(log_level_names[i].name[0]); // uppercased first letter of level name
-  
+
   g_log->filelog_name = "/tmp/openair.log";
   log_getconfig(g_log);
 

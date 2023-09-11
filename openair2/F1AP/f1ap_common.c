@@ -32,6 +32,11 @@
 
 #include "f1ap_common.h"
 
+#ifdef ENABLE_RIC_AGENT
+#include "openair2/RRC/LTE/rrc_defs.h"
+extern eNB_RRC_KPI_STATS    rrc_kpi_stats;
+#endif
+
 static f1ap_cudu_inst_t *f1_inst[NUMBER_OF_gNB_MAX]= {0};
 
 uint8_t F1AP_get_next_transaction_identifier(instance_t mod_idP, instance_t cu_mod_idP)

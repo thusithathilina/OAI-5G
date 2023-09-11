@@ -49,6 +49,11 @@ CMAKE_CMD="$CMAKE"
 OPTIONAL_LIBRARIES="telnetsrv enbscope uescope nrscope nrqtscope ldpc_cuda ldpc_t2 websrv oai_iqplayer"
 TARGET_LIST=""
 
+BUILD_RIC_AGENT="False"
+BUILD_RAN_SLICING="False"
+RIC_GENERATED_E2AP_BINDING_DIR=""
+RIC_GENERATED_E2SM_BINDING_DIR=""
+
 function print_help() {
   echo_info "
 This script compiles OpenAirInterface Software, and can install dependencies
@@ -354,7 +359,7 @@ function main() {
 	   TARGET_LIST="$TARGET_LIST doc"
            BUILD_DOXYGEN=1
            echo_info "Will build doxygen support"
-           shift;;     
+           shift;;
        --enable-LTTNG)
             CMAKE_CMD="$CMAKE_CMD -DENABLE_LTTNG=ON -DT_TRACER=OFF"
             echo_info "Enable LTTNG tracer"
@@ -388,7 +393,7 @@ function main() {
             CMAKE_CMD="$CMAKE_CMD"' -DCMAKE_ECLIPSE_GENERATE_SOURCE_PROJECT=TRUE -G"Eclipse CDT4 - Unix Makefiles"'
             echo_info "Enabling build eclipse project support"
             shift 1;;
-       --build-lib) 
+       --build-lib)
             if [  "$2" == "all" ] ; then
               TARGET_LIST="$TARGET_LIST $OPTIONAL_LIBRARIES"
               for lib in $OPTIONAL_LIBRARIES; do CMAKE_CMD="$CMAKE_CMD -DENABLE_${lib^^}=ON"; done
@@ -410,6 +415,11 @@ function main() {
         --noavx2)
             CMAKE_CMD="$CMAKE_CMD -DAVX2=OFF"
             echo_info "Disabling AVX2 instructions"
+            shift 1;;
+        --build-ric-agent)
+            BUILD_RIC_AGENT="True"
+            CMAKE_CMD="$CMAKE_CMD -DENABLE_RIC_AGENT=${BUILD_RIC_AGENT}"
+            echo_info "Enabling RIC agent"
             shift 1;;
         --ninja)
             CMAKE_CMD="$CMAKE_CMD -GNinja"
