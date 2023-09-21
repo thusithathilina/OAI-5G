@@ -2400,4 +2400,3 @@ ngran_node_t get_node_type(void)
     return ngran_gNB;
   }
 }
-
