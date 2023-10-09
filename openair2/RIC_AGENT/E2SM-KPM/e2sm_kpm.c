@@ -665,7 +665,7 @@ static int e2sm_kpm_gp_timer_expiry(
                 RIC_AGENT_ERROR("[SECSM] Unknown RAT");
                 return -1;
             }
-            
+
             // assemble ue information for SECSM
             // collect RRC msg trace
             int msgCount = ue_rrc_msg[i].msgCount;
