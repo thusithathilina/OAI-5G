@@ -1861,6 +1861,11 @@ void rrc_gNB_process_initial_ul_rrc_message(sctp_assoc_t assoc_id, const f1ap_in
   }
 
   if (ul_ccch_msg->message.present == NR_UL_CCCH_MessageType_PR_c1) {
+
+    #ifdef ENABLE_RIC_AGENT
+    addRrcMsg(ul_rrc->crnti, ul_ccch_msg->message.choice.c1->present, 0, 0); // SECSM
+    #endif
+
     switch (ul_ccch_msg->message.choice.c1->present) {
       case NR_UL_CCCH_MessageType__c1_PR_NOTHING:
         LOG_W(NR_RRC, "Received PR_NOTHING on UL-CCCH-Message, ignoring message\n");

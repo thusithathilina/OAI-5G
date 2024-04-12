@@ -642,7 +642,7 @@ void RCconfig_ric_agent(void)
 
         /* Get RIC configuration. */
         config_get(ric_params, sizeof(ric_params)/sizeof(paramdef_t), buf);
-        
+
         if ( (ric_params[RIC_CONFIG_IDX_ENABLED].strptr != (char **) NULL) &&
 	     (*ric_params[RIC_CONFIG_IDX_ENABLED].strptr != (char *) NULL) &&
 	     strcmp(*ric_params[RIC_CONFIG_IDX_ENABLED].strptr, "yes") == 0)
