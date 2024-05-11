@@ -547,6 +547,14 @@ void rrc_gNB_generate_dedicatedRRCReconfiguration(const protocol_ctxt_t *const c
       uint32_t length = dedicatedNAS_MessageList->list.array[0]->size;
       addNasMsg(ctxt_pP->rntiMaybeUEid, pdu_buf, length);
     }
+  addRrcMsg(ue_p->rnti, NR_DL_DCCH_MessageType__c1_PR_rrcReconfiguration, 1, 1); // SECSM
+  // decocde NAS content
+  if (dedicatedNAS_MessageList != NULL) {
+    // we only decode the first NAS item
+    uint8_t *pdu_buf = dedicatedNAS_MessageList->list.array[0]->buf;
+    uint32_t length = dedicatedNAS_MessageList->list.array[0]->size;
+    addNasMsg(ctxt_pP->rntiMaybeUEid, pdu_buf, length);
+  }
   #endif
 
   /* Free all NAS PDUs */
@@ -583,14 +591,14 @@ void rrc_gNB_generate_dedicatedRRCReconfiguration(const protocol_ctxt_t *const c
   NR_DRB_ToAddModList_t *DRBs = createDRBlist(ue_p, false);
 
   #ifdef ENABLE_RIC_AGENT
-    addRrcMsg(ctxt_pP->rntiMaybeUEid, NR_DL_DCCH_MessageType__c1_PR_rrcReconfiguration, 1, 1); // SECSM
-    // decocde NAS content
-    if (dedicatedNAS_MessageList != NULL) {
-      // we only decode the first NAS item
-      uint8_t *pdu_buf = dedicatedNAS_MessageList->list.array[0]->buf;
-      uint32_t length = dedicatedNAS_MessageList->list.array[0]->size;
-      addNasMsg(ctxt_pP->rntiMaybeUEid, pdu_buf, length);
-    }
+  addRrcMsg(ue_p->rnti, NR_DL_DCCH_MessageType__c1_PR_rrcReconfiguration, 1, 1); // SECSM
+  // decocde NAS content
+  if (dedicatedNAS_MessageList != NULL) {
+    // we only decode the first NAS item
+    uint8_t *pdu_buf = dedicatedNAS_MessageList->list.array[0]->buf;
+    uint32_t length = dedicatedNAS_MessageList->list.array[0]->size;
+    addNasMsg(ue_p->rnti, pdu_buf, length);
+  }
   #endif
 
   int size = do_RRCReconfiguration(ue_p,
@@ -716,7 +724,7 @@ rrc_gNB_modify_dedicatedRRCReconfiguration(
   }
 
   #ifdef ENABLE_RIC_AGENT
-  addRrcMsg(ctxt_pP->rntiMaybeUEid, NR_DL_DCCH_MessageType__c1_PR_rrcReconfiguration, 1, 1); // SECSM
+  addRrcMsg(ue_p->rnti, NR_DL_DCCH_MessageType__c1_PR_rrcReconfiguration, 1, 1); // SECSM
   // decocde NAS content
   if (dedicatedNAS_MessageList != NULL) {
     // we only decode the first NAS item
@@ -794,7 +802,7 @@ rrc_gNB_generate_dedicatedRRCReconfiguration_release(
   }
 
   #ifdef ENABLE_RIC_AGENT
-  addRrcMsg(ctxt_pP->rntiMaybeUEid, NR_DL_DCCH_MessageType__c1_PR_rrcReconfiguration, 1, 1); // SECSM
+  addRrcMsg(ue_p->rnti, NR_DL_DCCH_MessageType__c1_PR_rrcReconfiguration, 1, 1); // SECSM
   // decocde NAS content
   if (dedicatedNAS_MessageList != NULL) {
     // we only decode the first NAS item
@@ -1035,7 +1043,7 @@ static void rrc_gNB_process_RRCReestablishmentComplete(const protocol_ctxt_t *co
   ue_p->xids[new_xid] = RRC_REESTABLISH_COMPLETE;
   uint8_t buffer[RRC_BUF_SIZE] = {0};
   #ifdef ENABLE_RIC_AGENT
-    addRrcMsg(ctxt_pP->rntiMaybeUEid, NR_DL_DCCH_MessageType__c1_PR_rrcReconfiguration, 1, 1); // SECSM
+  addRrcMsg(ue_p->rnti, NR_DL_DCCH_MessageType__c1_PR_rrcReconfiguration, 1, 1); // SECSM
   #endif
   int size = do_RRCReconfiguration(ue_p,
                                    buffer,
@@ -1081,7 +1089,7 @@ int nr_rrc_reconfiguration_req(rrc_gNB_ue_context_t *const ue_context_pP,
   }
 
   #ifdef ENABLE_RIC_AGENT
-  addRrcMsg(ctxt_pP->rntiMaybeUEid, NR_DL_DCCH_MessageType__c1_PR_rrcReconfiguration, 1, 1); // SECSM
+  addRrcMsg(ue_p->rnti, NR_DL_DCCH_MessageType__c1_PR_rrcReconfiguration, 1, 1); // SECSM
   #endif
 
   uint8_t buffer[RRC_BUF_SIZE];
@@ -1717,11 +1725,11 @@ int rrc_gNB_decode_dcch(const protocol_ctxt_t *const ctxt_pP,
     xer_fprint(stdout, &asn_DEF_NR_UL_DCCH_Message, (void *)ul_dcch_msg);
   }
 
-  if (ul_dcch_msg->message.present == NR_UL_DCCH_MessageType_PR_c1) {
-    #ifdef ENABLE_RIC_AGENT
-    addRrcMsg(ctxt_pP->rntiMaybeUEid, ul_dcch_msg->message.choice.c1->present, 1, 0); // SECSM
-    #endif
+  #ifdef ENABLE_RIC_AGENT
+  addRrcMsg(ue_context_p->ue_context.rnti, ul_dcch_msg->message.choice.c1->present, 1, 0); // SECSM
+  #endif
 
+  if (ul_dcch_msg->message.present == NR_UL_DCCH_MessageType_PR_c1) {
     switch (ul_dcch_msg->message.choice.c1->present) {
       case NR_UL_DCCH_MessageType__c1_PR_NOTHING:
         LOG_I(NR_RRC, "Received PR_NOTHING on UL-DCCH-Message\n");
@@ -1854,6 +1862,11 @@ void rrc_gNB_process_initial_ul_rrc_message(sctp_assoc_t assoc_id, const f1ap_in
   }
 
   if (ul_ccch_msg->message.present == NR_UL_CCCH_MessageType_PR_c1) {
+
+    #ifdef ENABLE_RIC_AGENT
+    addRrcMsg(ul_rrc->crnti, ul_ccch_msg->message.choice.c1->present, 0, 0); // SECSM
+    #endif
+
     switch (ul_ccch_msg->message.choice.c1->present) {
       case NR_UL_CCCH_MessageType__c1_PR_NOTHING:
         LOG_W(NR_RRC, "Received PR_NOTHING on UL-CCCH-Message, ignoring message\n");
@@ -2595,7 +2608,7 @@ void rrc_gNB_generate_SecurityModeCommand(const protocol_ctxt_t *const ctxt_pP, 
   AssertFatal(!ue_p->as_security_active, "logic error: security already active\n");
 
   #ifdef ENABLE_RIC_AGENT
-    addRrcMsg(ctxt_pP->rntiMaybeUEid, NR_DL_DCCH_MessageType__c1_PR_securityModeCommand, 1, 1); // SECSM
+  addRrcMsg(ue_p->rnti, NR_DL_DCCH_MessageType__c1_PR_securityModeCommand, 1, 1); // SECSM
   #endif
 
   T(T_ENB_RRC_SECURITY_MODE_COMMAND,
@@ -2626,7 +2639,7 @@ rrc_gNB_generate_UECapabilityEnquiry(
   uint8_t buffer[100];
 
   #ifdef ENABLE_RIC_AGENT
-  addRrcMsg(ctxt_pP->rntiMaybeUEid, NR_DL_DCCH_MessageType__c1_PR_ueCapabilityEnquiry, 1, 1); // SECSM
+  addRrcMsg(ue_context_pP->ue_context.rnti, NR_DL_DCCH_MessageType__c1_PR_ueCapabilityEnquiry, 1, 1); // SECSM
   #endif
 
   T(T_ENB_RRC_UE_CAPABILITY_ENQUIRY, T_INT(ctxt_pP->module_id), T_INT(ctxt_pP->frame), T_INT(ctxt_pP->subframe), T_INT(ctxt_pP->rntiMaybeUEid));
@@ -2669,7 +2682,7 @@ rrc_gNB_generate_RRCRelease(
 //-----------------------------------------------------------------------------
 {
   #ifdef ENABLE_RIC_AGENT
-  addRrcMsg(ctxt_pP->rntiMaybeUEid, NR_DL_DCCH_MessageType__c1_PR_rrcRelease, 1, 1); // SECSM
+  addRrcMsg(ue_context_pP->ue_context.rnti, NR_DL_DCCH_MessageType__c1_PR_rrcRelease, 1, 1); // SECSM
   #endif
 
   uint8_t buffer[RRC_BUF_SIZE] = {0};
@@ -2693,6 +2706,12 @@ rrc_gNB_generate_RRCRelease(
   };
   deliver_ue_ctxt_release_data_t data = {.rrc = rrc, .release_cmd = &ue_context_release_cmd, .assoc_id = ue_data.du_assoc_id};
   nr_pdcp_data_req_srb(ctxt_pP->rntiMaybeUEid, DCCH, rrc_gNB_mui++, size, buffer, rrc_deliver_ue_ctxt_release_cmd, &data);
+
+  #ifdef E2_AGENT
+    signal_rrc_state_changed_to(UE, RC_SM_RRC_IDLE);
+  #endif
+
+  /* UE will be freed after UE context release complete */
 }
 
 int rrc_gNB_generate_pcch_msg(sctp_assoc_t assoc_id, const NR_SIB1_t *sib1, uint32_t tmsi, uint8_t paging_drx)
