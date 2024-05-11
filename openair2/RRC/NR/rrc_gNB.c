@@ -104,12 +104,12 @@
 #include "BIT_STRING.h"
 #include "assertions.h"
 
-#ifdef ENABLE_RIC_AGENT
-#include "common/secsm.h"
-#endif
-
 #ifdef E2_AGENT
 #include "openair2/E2AP/RAN_FUNCTION/O-RAN/ran_func_rc_extern.h"
+#endif
+
+#ifdef ENABLE_RIC_AGENT
+#include "common/secsm.h"
 #endif
 
 //#define XER_PRINT
