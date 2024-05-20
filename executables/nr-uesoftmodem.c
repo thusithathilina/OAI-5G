@@ -456,6 +456,7 @@ ldpc_interface_t ldpc_interface = {0}, ldpc_interface_offload = {0};
 
 int main(int argc, char **argv)
 {
+  uint8_t ue_id = 0;
   start_background_system();
 
   if ((uniqCfg = load_configmodule(argc, argv, CONFIG_ENABLECMDLINEONLY)) == NULL) {
@@ -559,7 +560,7 @@ int main(int argc, char **argv)
         nr_init_frame_parms_ue(&UE[CC_id]->frame_parms, nrUE_config, mac->nr_band);
       }
 
-      init_nr_ue_vars(UE[CC_id], 0, abstraction_flag);
+      init_nr_ue_vars(UE[CC_id], ue_id, abstraction_flag);
     }
 
     init_openair0();
