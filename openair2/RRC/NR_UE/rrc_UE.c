@@ -555,7 +555,7 @@ static int nr_decode_SI(NR_UE_RRC_SI_INFO *SI_info, NR_SystemInformation_t *si)
 static void nr_rrc_handle_msg3_indication(NR_UE_RRC_INST_t *rrc, rnti_t rnti)
 {
   switch (rrc->ra_trigger) {
-    case INITIAL_ACCESS_FROM_RRC_IDLE:
+    case RRC_CONNECTION_SETUP:
       // After SIB1 is received, prepare RRCConnectionRequest
       rrc->rnti = rnti;
       // start timer T300
@@ -605,7 +605,7 @@ static void nr_rrc_ue_prepare_RRCSetupRequest(NR_UE_RRC_INST_t *rrc)
   }
 
   uint8_t buf[1024];
-  int len = do_RRCSetupRequest(buf, sizeof(buf), rv);
+  int len = do_RRCSetupRequest(buf, sizeof(buf), rv, rrc->fiveG_S_TMSI);
 
   nr_rlc_srb_recv_sdu(rrc->ue_id, 0, buf, len);
 }
@@ -671,7 +671,7 @@ static int8_t nr_rrc_ue_decode_NR_BCCH_DL_SCH_Message(NR_UE_RRC_INST_t *rrc,
         LOG_A(NR_RRC, "SIB1 decoded\n");
         nr_timer_start(&SI_info->sib1_timer);
         if (rrc->nrRrcState == RRC_STATE_IDLE_NR) {
-          rrc->ra_trigger = INITIAL_ACCESS_FROM_RRC_IDLE;
+          rrc->ra_trigger = RRC_CONNECTION_SETUP;
           // preparing RRC setup request payload in advance
           nr_rrc_ue_prepare_RRCSetupRequest(rrc);
         }
@@ -811,22 +811,34 @@ static void nr_rrc_ue_process_masterCellGroup(NR_UE_RRC_INST_t *rrc,
 static void rrc_ue_generate_RRCSetupComplete(const NR_UE_RRC_INST_t *rrc, const uint8_t Transaction_id)
 {
   uint8_t buffer[100];
-  uint8_t size;
   const char *nas_msg;
   int   nas_msg_length;
 
   if (get_softmodem_params()->sa) {
-    as_nas_info_t initialNasMsg;
-    nr_ue_nas_t *nas = get_ue_nas_info(rrc->ue_id);
-    generateRegistrationRequest(&initialNasMsg, nas);
-    nas_msg = (char*)initialNasMsg.data;
-    nas_msg_length = initialNasMsg.length;
+    if (rrc->nasRegReqMsg.data) {
+      nas_msg = (char *)rrc->nasRegReqMsg.data;
+      nas_msg_length = rrc->nasRegReqMsg.length;
+    } else {
+      LOG_E(NR_RRC, "Failed to complete RRCSetup. NAS Registration Request message not found. \n");
+      return;
+    }
   } else {
     nas_msg = nr_nas_attach_req_imsi_dummy_NSA_case;
     nas_msg_length = sizeof(nr_nas_attach_req_imsi_dummy_NSA_case);
   }
 
-  size = do_RRCSetupComplete(buffer, sizeof(buffer), Transaction_id, rrc->selected_plmn_identity, nas_msg_length, nas_msg);
+  /* ng-5G-S-TMSI-Part2: The leftmost 9 bits of 5G-S-TMSI. */
+  if (rrc->fiveG_S_TMSI == UINT64_MAX)
+    LOG_D(NR_RRC, "5G-S-TMSI is not available!\n");
+  int size = do_RRCSetupComplete(buffer,
+                                 sizeof(buffer),
+                                 Transaction_id,
+                                 rrc->selected_plmn_identity,
+                                 rrc->ra_trigger == RRC_CONNECTION_SETUP,
+                                 rrc->fiveG_S_TMSI,
+                                 nas_msg_length,
+                                 nas_msg);
+  free(rrc->nasRegReqMsg.data);
   LOG_I(NR_RRC, "[UE %ld][RAPROC] Logical Channel UL-DCCH (SRB1), Generating RRCSetupComplete (bytes%d)\n", rrc->ue_id, size);
   int srb_id = 1; // RRC setup complete on SRB1
   LOG_D(NR_RRC, "[RRC_UE %ld] PDCP_DATA_REQ/%d Bytes RRCSetupComplete ---> %d\n", rrc->ue_id, size, srb_id);

@@ -103,7 +103,8 @@ typedef enum requested_SI_List_e {
 // 3GPP TS 38.300 Section 9.2.6
 typedef enum RA_trigger_e {
   RA_NOT_RUNNING,
-  INITIAL_ACCESS_FROM_RRC_IDLE,
+//  INITIAL_ACCESS_FROM_RRC_IDLE,
+  RRC_CONNECTION_SETUP,
   RRC_CONNECTION_REESTABLISHMENT,
   DURING_HANDOVER,
   NON_SYNCHRONISED,
@@ -211,7 +212,10 @@ typedef struct NR_UE_RRC_INST_s {
 
   long               selected_plmn_identity;
   Rrc_State_NR_t     nrRrcState;
-  as_nas_info_t      initialNasMsg;
+  //as_nas_info_t      initialNasMsg;
+  as_nas_info_t nasRegReqMsg;
+  /* 5G-S-TMSI */
+  uint64_t fiveG_S_TMSI;
 
   //Sidelink params
   NR_SL_PreconfigurationNR_r16_t *sl_preconfig;

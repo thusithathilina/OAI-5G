@@ -436,8 +436,9 @@ static void rrc_gNB_generate_RRCSetup(instance_t instance,
 //-----------------------------------------------------------------------------
 {
   LOG_I(NR_RRC, "rrc_gNB_generate_RRCSetup for RNTI %04x\n", rnti);
-
+ 
   gNB_RRC_UE_t *ue_p = &ue_context_pP->ue_context;
+  LOG_I(NR_RRC, "[Thusitha] -----------%d", ue_p->ng_5G_S_TMSI_Part1);
   gNB_RRC_INST *rrc = RC.nrrrc[instance];
   unsigned char buf[1024];
   uint8_t xid = rrc_gNB_get_next_transaction_identifier(instance);
@@ -1102,7 +1103,8 @@ static void rrc_handle_RRCSetupRequest(gNB_RRC_INST *rrc, sctp_assoc_t assoc_id,
 {
   rrc_gNB_ue_context_t *ue_context_p = NULL;
   if (NR_InitialUE_Identity_PR_randomValue == rrcSetupRequest->ue_Identity.present) {
-    /* randomValue                         BIT STRING (SIZE (39)) */
+    LOG_I(NR_RRC, "I'm going this way");
+        /* randomValue                         BIT STRING (SIZE (39)) */
     if (rrcSetupRequest->ue_Identity.choice.randomValue.size != 5) { // 39-bit random value
       LOG_E(NR_RRC,
             "wrong InitialUE-Identity randomValue size, expected 5, provided %lu",
@@ -1133,6 +1135,7 @@ static void rrc_handle_RRCSetupRequest(gNB_RRC_INST *rrc, sctp_assoc_t assoc_id,
 
     ue_context_p = rrc_gNB_create_ue_context(assoc_id, msg->crnti, rrc, random_value, msg->gNB_DU_ue_id);
   } else if (NR_InitialUE_Identity_PR_ng_5G_S_TMSI_Part1 == rrcSetupRequest->ue_Identity.present) {
+    LOG_I(NR_RRC, "I'm going with TMSI");
     /* <5G-S-TMSI> = <AMF Set ID><AMF Pointer><5G-TMSI> 48-bit */
     /* ng-5G-S-TMSI-Part1                  BIT STRING (SIZE (39)) */
     if (rrcSetupRequest->ue_Identity.choice.ng_5G_S_TMSI_Part1.size != 5) {

@@ -635,6 +635,7 @@ static void decodeRegistrationAccept(const uint8_t *buf, int len, nr_ue_nas_t *n
      AssertFatal(nas->guti, "out of memory\n");
      *nas->guti = reg_acc.guti->guti;
      free(reg_acc.guti); /* no proper memory management for NAS decoded messages */
+     LOG_I(NAS, "----------------- This is GUTI -------------------%d", nas->guti->tmsi);
   } else {
     LOG_W(NAS, "no GUTI in registration accept\n");
   }
