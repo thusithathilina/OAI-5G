@@ -607,7 +607,7 @@ static int e2sm_kpm_gp_timer_expiry(
                     imsi += ue_context_p->ue_context.imsi.digit1  * 100000000000000; // pow(10, 14)
                     // populate other fields
                     status = ue_context_p->ue_context.StatusRrc;
-                    initial_id = ue_context_p->ue_context.ue_initial_id;
+//                    initial_id = ue_context_p->ue_context.ue_initial_id;
                     cipher_alg = ue_context_p->ue_context.ciphering_algorithm;
                     integrity_alg = ue_context_p->ue_context.integrity_algorithm;
                     // failure_timer = ue_context_p->ue_context.ul_failure_timer;
@@ -644,7 +644,7 @@ static int e2sm_kpm_gp_timer_expiry(
                     imsi += ue_context_p->ue_context.imsi.digit1  * 100000000000000; // pow(10, 14)
                     // populate other fields
                     status = ue_context_p->ue_context.StatusRrc;
-                    initial_id = ue_context_p->ue_context.ue_initial_id;
+//                    initial_id = ue_context_p->ue_context.ue_initial_id;
                     cipher_alg = ue_context_p->ue_context.ciphering_algorithm;
                     integrity_alg = ue_context_p->ue_context.integrity_algorithm;
                     // failure_timer = ue_context_p->ue_context.ul_failure_timer;
@@ -680,7 +680,8 @@ static int e2sm_kpm_gp_timer_expiry(
             if (prev_msg_counter[i] == msgCount + totalNasMsg)
                 continue; // message count has not been changed, don't update this UE
 
-            RIC_AGENT_INFO("[SECSM] Report UE ID: %x, RNTI: %x, RAT:%x, IMSI:%ld, random_id: %ld\n", initial_id, rnti, RAT, imsi, random_id);
+//            RIC_AGENT_INFO("[SECSM] Report UE ID: %x, RNTI: %x, RAT:%x, IMSI:%ld, random_id: %ld\n", initial_id, rnti, RAT, imsi, random_id);
+            RIC_AGENT_INFO("[SECSM] Report UE: RNTI: %x, RAT:%x, IMSI:%ld, random_id: %ld\n", rnti, RAT, imsi, random_id);
 
             prev_state[i] = status;
             shouldUpdate = 1;
