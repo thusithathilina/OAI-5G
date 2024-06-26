@@ -2545,7 +2545,7 @@ if (${T_TRACER})
         PHY_COMMON PHY PHY_UE PHY_NR PHY_NR_COMMON PHY_NR_UE PHY_RU PHY_MEX
         L2 L2_LTE L2_NR L2_LTE_NR L2_UE NR_L2_UE L2_UE_LTE_NR MAC_NR_COMMON MAC_UE_NR ngap
         CN_UTILS GTPV1U SCTP_CLIENT MME_APP LIB_NAS_UE NB_IoT SIMU SIMU_ETH OPENAIR0_LIB
-        ldpc_orig ldpc_optim ldpc_optim8seg ldpc_t2 ldpc_cl ldpc_cuda ldpc dfts config_internals nr_common)
+        ldpc_orig ldpc_optim ldpc_optim8seg ldpc_t2 ldpc_cl ldpc_cuda ldpc dfts config_internals nr_common
         ${E2AP_ASN_LIB} ${E2AP_LIB} ${E2SM_KPM_ASN_LIB} ${E2SM_KPM_LIB}  ${E2SM_RC_ASN_LIB} ${E2SM_RC_LIB} ${E2SM_RSM_LIB} ${RIC_AGENT_LIB}
         )
     if (TARGET ${i})
