@@ -122,6 +122,13 @@ extern "C" {
 #define SET_LOG_DUMP(B)   g_log->dump_mask = (g_log->dump_mask | B)
 #define CLEAR_LOG_DUMP(B) g_log->dump_mask = (g_log->dump_mask & (~B))
 
+#ifdef ENABLE_RIC_AGENT
+#define COMP_DEF_WITH_RIC_AGENT(COMP_DEF) \
+    COMP_DEF(RIC_AGENT, log)
+#else
+#define COMP_DEF_WITH_RIC_AGENT(COMP_DEF)
+#endif
+
 #define FOREACH_COMP(COMP_DEF)  \
   COMP_DEF(PHY, log)            \
   COMP_DEF(MAC, log)            \
@@ -173,6 +180,7 @@ extern "C" {
   COMP_DEF(NFAPI_PNF, log)      \
   COMP_DEF(ITTI, log)           \
   COMP_DEF(UTIL, log)           \
+  COMP_DEF_WITH_RIC_AGENT(COMP_DEF)  \
   COMP_DEF(MAX_LOG_PREDEF_COMPONENTS, )
 
 #define COMP_ENUM(comp, file_extension) comp,
