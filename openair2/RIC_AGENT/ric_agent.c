@@ -641,7 +641,7 @@ void RCconfig_ric_agent(void)
         }
 
         /* Get RIC configuration. */
-        config_get(ric_params, sizeof(ric_params)/sizeof(paramdef_t), buf);
+        config_get(config_get_if(), ric_params, sizeof(ric_params)/sizeof(paramdef_t), buf);
 
         if ( (ric_params[RIC_CONFIG_IDX_ENABLED].strptr != (char **) NULL) &&
 	     (*ric_params[RIC_CONFIG_IDX_ENABLED].strptr != (char *) NULL) &&
@@ -681,7 +681,7 @@ void RCconfig_ric_agent(void)
                     e2_conf[i]->node_name = strdup(RC.nrrrc[i]->node_name);
                 else
                     e2_conf[i]->node_name = GNB_CONFIG_STRING_GNB_LIST;
-                e2_conf[i]->cell_identity = RC.nrrrc[i]->configuration.cell_identity;
+                e2_conf[i]->cell_identity = RC.nrrrc[i]->nr_cellid;
                 e2_conf[i]->mcc = RC.nrrrc[i]->configuration.mcc[0];
                 e2_conf[i]->mnc = RC.nrrrc[i]->configuration.mnc[0];
                 e2_conf[i]->mnc_digit_length = RC.nrrrc[i]->configuration.mnc_digit_length[0];
