@@ -926,7 +926,7 @@ static void rrc_gNB_generate_RRCReestablishment(rrc_gNB_ue_context_t *ue_context
   uint32_t ssb_arfcn = get_ssb_arfcn(du);
 
   #ifdef ENABLE_RIC_AGENT
-    addRrcMsg(ctxt_pP->rntiMaybeUEid, NR_DL_DCCH_MessageType__c1_PR_rrcReestablishment, 0, 1); // SECSM
+    addRrcMsg(ue_p->rntiMaybeUEid, NR_DL_DCCH_MessageType__c1_PR_rrcReestablishment, 0, 1); // SECSM
   #endif
 
   int size = do_RRCReestablishment(ue_context_pP, buffer, RRC_BUF_SIZE, xid, cell_info->nr_pci, ssb_arfcn);
