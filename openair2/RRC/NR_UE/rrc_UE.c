@@ -309,6 +309,8 @@ NR_UE_RRC_INST_t* nr_rrc_init_ue(char* uecap_file, int nb_inst)
     rrc->as_security_activated = false;
     rrc->ra_trigger = RA_NOT_RUNNING;
     rrc->uecap_file = uecap_file;
+/* 5G-S-TMSI */
+    rrc->fiveG_S_TMSI = UINT64_MAX;
 
     memset(&rrc->timers_and_constants, 0, sizeof(rrc->timers_and_constants));
     set_default_timers_and_constants(&rrc->timers_and_constants);
@@ -626,6 +628,14 @@ void nr_rrc_configure_default_SI(NR_UE_RRC_SI_INFO *SI_info,
   }
 }
 
+static void trigger_registration(uint8_t ue_id)
+{
+  instance_t instance = 0;
+  MessageDef *msg = itti_alloc_new_message(TASK_NAS_NRUE, 0, NAS_REGISTRATION_REQ);
+  NAS_REGISTRATION_REQ(msg).UEid = ue_id;
+  itti_send_msg_to_task(TASK_NAS_NRUE, instance, msg);
+}
+
 static int8_t nr_rrc_ue_decode_NR_BCCH_DL_SCH_Message(NR_UE_RRC_INST_t *rrc,
                                                       const uint8_t gNB_index,
                                                       uint8_t *const Sdu,
@@ -672,6 +682,9 @@ static int8_t nr_rrc_ue_decode_NR_BCCH_DL_SCH_Message(NR_UE_RRC_INST_t *rrc,
         nr_timer_start(&SI_info->sib1_timer);
         if (rrc->nrRrcState == RRC_STATE_IDLE_NR) {
           rrc->ra_trigger = RRC_CONNECTION_SETUP;
+          /* Trigger NAS Registration Request */
+          uint8_t ue_id = 0;
+          trigger_registration(ue_id);
           // preparing RRC setup request payload in advance
           nr_rrc_ue_prepare_RRCSetupRequest(rrc);
         }
@@ -1493,6 +1506,20 @@ void *rrc_nrue(void *notUsed)
     nr_pdcp_data_req_srb(rrc->ue_id, srb_id, 0, length, buffer, deliver_pdu_srb_rlc, NULL);
     break;
   }
+
+  case NAS_5GMM_IND: {
+    Nas5GMMInd *req = &NAS_5GMM_IND(msg_p);
+    rrc->fiveG_S_TMSI = req->fiveG_STMSI;
+    break;
+  }
+
+  case NAS_REG_REQ_IND:
+    LOG_D(NR_RRC, "Received Registration Request indication from NAS\n");
+    NasRegistrationReqInd *ind = &NAS_REG_REQ_IND(msg_p);
+    rrc->nasRegReqMsg.length = ind->nasMsg.length;
+    rrc->nasRegReqMsg.data = calloc(ind->nasMsg.length, sizeof(*ind->nasMsg.data));
+    memcpy(rrc->nasRegReqMsg.data, ind->nasMsg.data, rrc->nasRegReqMsg.length);
+    break;
 
   default:
     LOG_E(NR_RRC, "[UE %ld] Received unexpected message %s\n", rrc->ue_id, ITTI_MSG_NAME(msg_p));
