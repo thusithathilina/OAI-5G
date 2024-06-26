@@ -624,7 +624,7 @@ static int e2sm_kpm_gp_timer_expiry(
             }
             else if (RC.nrrrc != NULL) {
                 // 5G NR
-                struct rrc_gNB_ue_context_s *ue_context_p = rrc_gNB_get_ue_context_by_rnti(RC.nrrrc[ric->ranid], -1, rnti);
+                struct rrc_gNB_ue_context_s *ue_context_p = rrc_gNB_get_ue_context_by_rnti_any_du(RC.nrrrc[ric->ranid], rnti);
                 if (ue_context_p) {
                     // populate imsi
                     imsi  = ue_context_p->ue_context.imsi.digit15;
