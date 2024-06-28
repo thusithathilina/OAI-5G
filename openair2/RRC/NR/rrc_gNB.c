@@ -1567,6 +1567,7 @@ static int handle_rrcSetupComplete(const protocol_ctxt_t *const ctxt_pP,
     LOG_I(NR_RRC, "Processing NR_RRCSetupComplete UE %lx, ue_context_p is NULL\n", ctxt_pP->rntiMaybeUEid);
     return -1;
   }
+LOG_I(NR_RRC, "Inside handle_rrcSetupComplete %d", ctxt_pP->rntiMaybeUEid);
   gNB_RRC_UE_t *UE = &ue_context_p->ue_context;
   uint8_t xid = setup_complete->rrc_TransactionIdentifier;
   UE->xids[xid] = RRC_ACTION_NONE;
@@ -2464,7 +2465,7 @@ void *rrc_gnb_task(void *args_p) {
         PROTOCOL_CTXT_SET_BY_INSTANCE(&ctxt,
                                       instance,
                                       GNB_FLAG_YES,
-                                      F1AP_UL_RRC_MESSAGE(msg_p).gNB_CU_ue_id,
+                                      F1AP_UL_RRC_MESSAGE(msg_p).gNB_DU_ue_id,
                                       0,
                                       0);
         LOG_D(NR_RRC,
