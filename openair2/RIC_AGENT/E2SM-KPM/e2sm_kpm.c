@@ -624,7 +624,7 @@ static int e2sm_kpm_gp_timer_expiry(
             }
             else if (RC.nrrrc != NULL) {
                 // 5G NR
-                struct rrc_gNB_ue_context_s *ue_context_p = rrc_gNB_get_ue_context_by_rnti(RC.nrrrc[ric->ranid], rnti);
+                struct rrc_gNB_ue_context_s *ue_context_p = rrc_gNB_get_ue_context_by_rnti_any_du(RC.nrrrc[ric->ranid], rnti);
                 if (ue_context_p) {
                     // populate imsi
                     imsi  = ue_context_p->ue_context.imsi.digit15;
@@ -644,7 +644,7 @@ static int e2sm_kpm_gp_timer_expiry(
                     imsi += ue_context_p->ue_context.imsi.digit1  * 100000000000000; // pow(10, 14)
                     // populate other fields
                     status = ue_context_p->ue_context.StatusRrc;
-                    initial_id = ue_context_p->ue_context.ue_initial_id;
+//                    initial_id = ue_context_p->ue_context.ue_initial_id;
                     cipher_alg = ue_context_p->ue_context.ciphering_algorithm;
                     integrity_alg = ue_context_p->ue_context.integrity_algorithm;
                     // failure_timer = ue_context_p->ue_context.ul_failure_timer;

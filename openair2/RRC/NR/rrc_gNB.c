@@ -539,7 +539,7 @@ void rrc_gNB_generate_dedicatedRRCReconfiguration(const protocol_ctxt_t *const c
   }
 
   #ifdef ENABLE_RIC_AGENT
-    addRrcMsg(ctxt_pP->rntiMaybeUEid, NR_DL_DCCH_MessageType__c1_PR_rrcReconfiguration, 1, 1); // SECSM
+    addRrcMsg(ue_p->rnti, NR_DL_DCCH_MessageType__c1_PR_rrcReconfiguration, 1, 1); // SECSM
     // decocde NAS content
     if (dedicatedNAS_MessageList != NULL) {
       // we only decode the first NAS item
@@ -547,14 +547,6 @@ void rrc_gNB_generate_dedicatedRRCReconfiguration(const protocol_ctxt_t *const c
       uint32_t length = dedicatedNAS_MessageList->list.array[0]->size;
       addNasMsg(ctxt_pP->rntiMaybeUEid, pdu_buf, length);
     }
-  addRrcMsg(ue_p->rnti, NR_DL_DCCH_MessageType__c1_PR_rrcReconfiguration, 1, 1); // SECSM
-  // decocde NAS content
-  if (dedicatedNAS_MessageList != NULL) {
-    // we only decode the first NAS item
-    uint8_t *pdu_buf = dedicatedNAS_MessageList->list.array[0]->buf;
-    uint32_t length = dedicatedNAS_MessageList->list.array[0]->size;
-    addNasMsg(ctxt_pP->rntiMaybeUEid, pdu_buf, length);
-  }
   #endif
 
   /* Free all NAS PDUs */
@@ -589,17 +581,6 @@ void rrc_gNB_generate_dedicatedRRCReconfiguration(const protocol_ctxt_t *const c
   uint8_t buffer[RRC_BUF_SIZE] = {0};
   NR_SRB_ToAddModList_t *SRBs = createSRBlist(ue_p, false);
   NR_DRB_ToAddModList_t *DRBs = createDRBlist(ue_p, false);
-
-  #ifdef ENABLE_RIC_AGENT
-  addRrcMsg(ue_p->rnti, NR_DL_DCCH_MessageType__c1_PR_rrcReconfiguration, 1, 1); // SECSM
-  // decocde NAS content
-  if (dedicatedNAS_MessageList != NULL) {
-    // we only decode the first NAS item
-    uint8_t *pdu_buf = dedicatedNAS_MessageList->list.array[0]->buf;
-    uint32_t length = dedicatedNAS_MessageList->list.array[0]->size;
-    addNasMsg(ue_p->rnti, pdu_buf, length);
-  }
-  #endif
 
   int size = do_RRCReconfiguration(ue_p,
                                    buffer,
@@ -730,7 +711,7 @@ rrc_gNB_modify_dedicatedRRCReconfiguration(
     // we only decode the first NAS item
     uint8_t *pdu_buf = dedicatedNAS_MessageList->list.array[0]->buf;
     uint32_t length = dedicatedNAS_MessageList->list.array[0]->size;
-    addNasMsg(ctxt_pP->rntiMaybeUEid, pdu_buf, length);
+    addNasMsg(ue_p->rnti, pdu_buf, length);
   }
   #endif
 
@@ -934,7 +915,7 @@ static void rrc_gNB_generate_RRCReestablishment(rrc_gNB_ue_context_t *ue_context
   const f1ap_served_cell_info_t *cell_info = &du->setup_req->cell[0].info;
   uint32_t ssb_arfcn = get_ssb_arfcn(du);
   #ifdef ENABLE_RIC_AGENT
-    addRrcMsg(ctxt_pP->rntiMaybeUEid, NR_DL_DCCH_MessageType__c1_PR_rrcReestablishment, 0, 1); // SECSM
+    addRrcMsg(old_rnti, NR_DL_DCCH_MessageType__c1_PR_rrcReestablishment, 0, 1); // SECSM
   #endif
   int size = do_RRCReestablishment(ue_context_pP, buffer, RRC_BUF_SIZE, xid, cell_info->nr_pci, ssb_arfcn);
 
