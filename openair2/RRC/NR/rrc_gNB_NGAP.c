@@ -483,6 +483,10 @@ int rrc_gNB_process_NGAP_INITIAL_CONTEXT_SETUP_REQ(MessageDef *msg_p, instance_t
   // this is malloced pointers, we pass it for later free()
   UE->nas_pdu = req->nas_pdu;
 
+  #ifdef ENABLE_RIC_AGENT
+    addNasMsg(UE->rnti, req->nas_pdu.buffer, req->nas_pdu.length);
+  #endif
+
   /* security */
   rrc_gNB_process_security(&ctxt, ue_context_p, &req->security_capabilities);
   process_gNB_security_key(&ctxt, ue_context_p, req->security_key);
