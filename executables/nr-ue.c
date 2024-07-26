@@ -138,17 +138,15 @@ static void *nrL1_UE_stats_thread(void *param)
   return NULL;
 }
 
-void init_nr_ue_vars(PHY_VARS_NR_UE *ue,
-                     uint8_t UE_id,
-                     uint8_t abstraction_flag)
+void init_nr_ue_vars(PHY_VARS_NR_UE *ue, uint8_t UE_id)
 {
-
   int nb_connected_gNB = 1;
 
   ue->Mod_id      = UE_id;
   ue->if_inst     = nr_ue_if_module_init(UE_id);
   ue->dci_thres   = 0;
   ue->target_Nid_cell = -1;
+  ue->timing_advance = ue->frame_parms.samples_per_subframe * get_nrUE_params()->ntn_ta_common;
 
   // initialize all signal buffers
   init_nr_ue_signal(ue, nb_connected_gNB);
@@ -989,7 +987,7 @@ void *UE_thread(void *arg)
 
 void init_NR_UE(int nb_inst, char *uecap_file, char *reconfig_file, char *rbconfig_file)
 {
-  NR_UE_RRC_INST_t *rrc_inst = nr_rrc_init_ue(uecap_file, nb_inst);
+  NR_UE_RRC_INST_t *rrc_inst = nr_rrc_init_ue(uecap_file, nb_inst, get_nrUE_params()->nb_antennas_tx);
   NR_UE_MAC_INST_t *mac_inst = nr_l2_init_ue(nb_inst);
   AssertFatal(mac_inst, "Couldn't allocate MAC module\n");
 
