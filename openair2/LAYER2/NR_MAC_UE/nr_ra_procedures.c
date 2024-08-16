@@ -31,7 +31,7 @@
  */
 
 /* RRC */
-#include "RRC/NR_UE/rrc_proto.h"
+#include "RRC/NR_UE/L2_interface_ue.h"
 
 /* MAC */
 #include "LAYER2/NR_MAC_COMMON/nr_mac_extern.h"
@@ -91,6 +91,7 @@ void init_RA(NR_UE_MAC_INST_t *mac,
                                            mac->nr_band,
                                            mac->frame_type,
                                            mac->frequency_range,
+                                           mac->current_UL_BWP->channel_bandwidth,
                                            2,
                                            false,
                                            prach_scs,

@@ -3,9 +3,6 @@
 #include <executables/nr-softmodem-common.h>
 #include <executables/softmodem-common.h>
 #include "PHY/defs_nr_UE.h"
-#include "SIMULATION/ETH_TRANSPORT/proto.h"
-
-
 
 #define  CONFIG_HLP_IF_FREQ                "IF frequency for RF, if needed\n"
 #define  CONFIG_HLP_IF_FREQ_OFF            "UL IF frequency offset for RF, if needed\n"
@@ -65,6 +62,7 @@
   {"num-ues",                      NULL,                       0,               .iptr=&(NB_UE_INST),                         .defuintval=1,     TYPE_INT,      0}, \
   {"ntn-koffset",                  CONFIG_HLP_NTN_KOFFSET,     0,               .uptr=&(nrUE_params.ntn_koffset),            .defuintval=0,     TYPE_UINT,     0}, \
   {"ntn-ta-common",                CONFIG_HLP_NTN_TA_COMMON,   0,               .dblptr=&(nrUE_params.ntn_ta_common),        .defdblval=0.0,    TYPE_DOUBLE,   0}, \
+  {"agc",                          CONFIG_HLP_AGC,             PARAMFLAG_BOOL,  .iptr=&(nrUE_params.agc),                   .defintval=0,       TYPE_INT,   0}, \
 }
 // clang-format on
 
@@ -87,6 +85,7 @@ typedef struct {
   int ldpc_offload_flag;
   unsigned int   ntn_koffset;
   double         ntn_ta_common;
+  int agc;
 } nrUE_params_t;
 extern uint64_t get_nrUE_optmask(void);
 extern uint64_t set_nrUE_optmask(uint64_t bitmask);

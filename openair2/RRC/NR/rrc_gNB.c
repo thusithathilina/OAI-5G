@@ -73,9 +73,6 @@
 
 #include "T.h"
 
-#include "RRC/NAS/nas_config.h"
-#include "RRC/NAS/rb_config.h"
-
 #include "openair3/SECU/secu_defs.h"
 
 #include "rrc_gNB_NGAP.h"
@@ -2263,8 +2260,6 @@ void rrc_gNB_process_e1_bearer_context_setup_resp(e1ap_bearer_setup_resp_t *resp
       nb_drb++;
     }
   }
-
-  AssertFatal(UE->as_security_active, "logic bug: security should be active when activating DRBs\n");
 
   if (!UE->f1_ue_context_active)
     rrc_gNB_generate_UeContextSetupRequest(rrc, ue_context_p, nb_drb, drbs);

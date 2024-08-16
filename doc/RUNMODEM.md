@@ -103,12 +103,15 @@ Command line parameters for UE in `--sa` mode:
 - `--ssb` : SSB start subcarrier (default value 516)
 
 **Optional parameters**:
+- `-E`: use three-quarter sampling for split 8 sample rate. Required for
+  certain radios (e.g., 40MHz with B210). If used on the gNB, it is a good idea
+  to use for the UE as well (and vice versa).
 - `--ue-scan-carrier` : scan for cells in current bandwidth. This option can be used if the SSB position of the gNB is unknown. If multiple cells are detected, the UE will try to connect to the first cell. By default, this option is disabled and the UE attempts to only decode SSB given by `--ssb`.
 
 To simplify the configuration for the user testing OAI UE with OAI gNB, the latter prints the following LOG that guides the user to correctly set some of the UE command line parameters.
 
 ```
-[PHY]   Command line parameters for the UE: -C 3319680000 -r 106 --numerology 1 --ssb 516
+[PHY]   Command line parameters for OAI UE: -C 3319680000 -r 106 --numerology 1 --ssb 516
 ```
 
 You can run this, using USRPs, on two separate machines:
@@ -202,6 +205,14 @@ cd cmake_targets
 sudo ./ran_build/build/nr-softmodem -O ../targets/PROJECTS/GENERIC-NR-5GC/CONF/gnb.sa.band66.fr1.25PRB.usrpx300.conf --sa --rfsim --rfsimulator.prop_delay 238.74
 ```
 
+To configure NTN gNB with 32 HARQ processes in downlink and uplink, add these settings in conf files under section `gNBs.[0]`
+```
+...
+    num_dlharq = 32;
+    num_ulharq = 32;
+...
+```
+
 ### NR UE
 
 At UE side, there are two main parameters to cope with the large NTN propagation delay, cellSpecificKoffset and ta-Common.
@@ -282,8 +293,8 @@ In do-ra mode it is possible to mimic the reception of UE Capabilities at gNB by
 To run using the RFsimulator:
 
 ```bash
-sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-LTE-EPC/CONF/gnb.band78.tm1.106PRB.usrpn300.conf --do-ra --rfsim --parallel-config PARALLEL_SINGLE_THREAD
-sudo ./nr-uesoftmodem --do-ra --rfsim --rfsimulator.serveraddr 127.0.0.1 --parallel-config PARALLEL_SINGLE_THREAD
+sudo ./nr-softmodem -O ../../../targets/PROJECTS/GENERIC-LTE-EPC/CONF/gnb.band78.tm1.106PRB.usrpn300.conf --do-ra --rfsim
+sudo ./nr-uesoftmodem --do-ra --rfsim --rfsimulator.serveraddr 127.0.0.1
 ```
 
 Using USRPs:

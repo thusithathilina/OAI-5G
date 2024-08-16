@@ -27,6 +27,7 @@
 #include "PHY/INIT/nr_phy_init.h"
 #include "NR_MAC_UE/mac_proto.h"
 #include "RRC/NR_UE/rrc_proto.h"
+#include "RRC/NR_UE/L2_interface_ue.h"
 #include "SCHED_NR_UE/phy_frame_config_nr.h"
 #include "SCHED_NR_UE/defs.h"
 #include "PHY/NR_UE_TRANSPORT/nr_transport_proto_ue.h"
@@ -100,17 +101,14 @@ static size_t dump_L1_UE_meas_stats(PHY_VARS_NR_UE *ue, char *output, size_t max
 {
   const char *begin = output;
   const char *end = output + max_len;
-  output += print_meas_log(&ue->phy_proc_tx, "L1 TX processing", NULL, NULL, output, end - output);
-  output += print_meas_log(&ue->ulsch_encoding_stats, "ULSCH encoding", NULL, NULL, output, end - output);
-  output += print_meas_log(&ue->phy_proc_rx, "L1 RX processing", NULL, NULL, output, end - output);
-  output += print_meas_log(&ue->ue_ul_indication_stats, "UL Indication", NULL, NULL, output, end - output);
-  output += print_meas_log(&ue->rx_pdsch_stats, "PDSCH receiver", NULL, NULL, output, end - output);
-  output += print_meas_log(&ue->dlsch_decoding_stats, "PDSCH decoding", NULL, NULL, output, end - output);
-  output += print_meas_log(&ue->dlsch_deinterleaving_stats, " -> Deinterleive", NULL, NULL, output, end - output);
-  output += print_meas_log(&ue->dlsch_rate_unmatching_stats, " -> Rate Unmatch", NULL, NULL, output, end - output);
-  output += print_meas_log(&ue->dlsch_ldpc_decoding_stats, " ->  LDPC Decode", NULL, NULL, output, end - output);
-  output += print_meas_log(&ue->dlsch_unscrambling_stats, "PDSCH unscrambling", NULL, NULL, output, end - output);
-  output += print_meas_log(&ue->dlsch_rx_pdcch_stats, "PDCCH handling", NULL, NULL, output, end - output);
+  for (int i = 0; i < MAX_CPU_STAT_TYPE; i++) {
+    output += print_meas_log(&ue->phy_cpu_stats.cpu_time_stats[i],
+                             ue->phy_cpu_stats.cpu_time_stats[i].meas_name,
+                             NULL,
+                             NULL,
+                             output,
+                             end - output);
+  }
   return output - begin;
 }
 
@@ -348,10 +346,31 @@ typedef struct {
   int rx_offset;
 } syncData_t;
 
+static int nr_ue_adjust_rx_gain(PHY_VARS_NR_UE *UE, openair0_config_t *cfg0, int gain_change)
+{
+  // Increase the RX gain by the value determined by adjust_rxgain
+  cfg0->rx_gain[0] += gain_change;
+
+  // Set new RX gain.
+  int ret_gain = UE->rfdevice.trx_set_gains_func(&UE->rfdevice, cfg0);
+  // APPLY RX gain again if crossed the MAX RX gain threshold
+  if (ret_gain < 0) {
+    gain_change += ret_gain;
+    cfg0->rx_gain[0] += ret_gain;
+    ret_gain = UE->rfdevice.trx_set_gains_func(&UE->rfdevice, cfg0);
+  }
+
+  int applied_rxgain = cfg0->rx_gain[0] - cfg0->rx_gain_offset[0];
+  LOG_I(PHY, "Rxgain adjusted by %d dB, RX gain: %d dB \n", gain_change, applied_rxgain);
+
+  return gain_change;
+}
+
 static void UE_synch(void *arg) {
   syncData_t *syncD = (syncData_t *)arg;
   PHY_VARS_NR_UE *UE = syncD->UE;
   UE->is_synchronized = 0;
+  openair0_config_t *cfg0 = &openair0_cfg[UE->rf_map.card];
 
   if (UE->target_Nid_cell != -1) {
     LOG_W(NR_PHY, "Starting re-sync detection for target Nid_cell %i\n", UE->target_Nid_cell);
@@ -383,18 +402,30 @@ static void UE_synch(void *arg) {
 
     // rerun with new cell parameters and frequency-offset
     // todo: the freq_offset computed on DL shall be scaled before being applied to UL
-    nr_rf_card_config_freq(&openair0_cfg[UE->rf_map.card], ul_carrier, dl_carrier, freq_offset);
+    nr_rf_card_config_freq(cfg0, ul_carrier, dl_carrier, freq_offset);
+
+    if (get_nrUE_params()->agc) {
+      nr_ue_adjust_rx_gain(UE, cfg0, UE->adjust_rxgain);
+    }
 
     LOG_I(PHY,
           "Got synch: hw_slot_offset %d, carrier off %d Hz, rxgain %f (DL %f Hz, UL %f Hz)\n",
           hw_slot_offset,
           freq_offset,
-          openair0_cfg[UE->rf_map.card].rx_gain[0],
-          openair0_cfg[UE->rf_map.card].rx_freq[0],
-          openair0_cfg[UE->rf_map.card].tx_freq[0]);
+          cfg0->rx_gain[0] - cfg0->rx_gain_offset[0],
+          cfg0->rx_freq[0],
+          cfg0->tx_freq[0]);
 
-    UE->rfdevice.trx_set_freq_func(&UE->rfdevice, &openair0_cfg[0]);
+    UE->rfdevice.trx_set_freq_func(&UE->rfdevice, cfg0);
     UE->is_synchronized = 1;
+  } else {
+    int gain_change = 0;
+    if (get_nrUE_params()->agc)
+      gain_change = nr_ue_adjust_rx_gain(UE, cfg0, INCREASE_IN_RXGAIN);
+    if (gain_change)
+      LOG_I(PHY, "synch retry: Rx gain increased \n");
+    else
+      LOG_E(PHY, "synch Failed: \n");
   }
 }
 

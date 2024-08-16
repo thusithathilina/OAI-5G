@@ -118,9 +118,11 @@ static void config_common_ue_sa(NR_UE_MAC_INST_t *mac,
   NR_FrequencyInfoDL_SIB_t *frequencyInfoDL = &scc->downlinkConfigCommon.frequencyInfoDL;
   AssertFatal(frequencyInfoDL->frequencyBandList.list.array[0]->freqBandIndicatorNR, "Field mandatory present for DL in SIB1\n");
   mac->nr_band = *frequencyInfoDL->frequencyBandList.list.array[0]->freqBandIndicatorNR;
-  cfg->carrier_config.dl_bandwidth = get_supported_bw_mhz(mac->frequency_range,
-                                                          frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing,
-                                                          frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
+
+  int bw_index = get_supported_band_index(frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing,
+                                          mac->frequency_range,
+                                          frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
+  cfg->carrier_config.dl_bandwidth = get_supported_bw_mhz(mac->frequency_range, bw_index);
 
   uint64_t dl_bw_khz = (12 * frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth) *
                        (15 << frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing);
@@ -139,9 +141,11 @@ static void config_common_ue_sa(NR_UE_MAC_INST_t *mac,
 
   NR_FrequencyInfoUL_SIB_t *frequencyInfoUL = &scc->uplinkConfigCommon->frequencyInfoUL;
   mac->p_Max = frequencyInfoUL->p_Max ? *frequencyInfoUL->p_Max : INT_MIN;
-  cfg->carrier_config.uplink_bandwidth = get_supported_bw_mhz(mac->frequency_range,
-                                                              frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing,
-                                                              frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
+
+  bw_index = get_supported_band_index(frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing,
+                                      mac->frequency_range,
+                                      frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
+  cfg->carrier_config.uplink_bandwidth = get_supported_bw_mhz(mac->frequency_range, bw_index);
 
   if (frequencyInfoUL->absoluteFrequencyPointA == NULL)
     cfg->carrier_config.uplink_frequency = cfg->carrier_config.dl_frequency;
@@ -260,9 +264,10 @@ static void config_common_ue(NR_UE_MAC_INST_t *mac,
     mac->frame_type = get_frame_type(mac->nr_band, get_softmodem_params()->numerology);
     mac->frequency_range = mac->nr_band < 256 ? FR1 : FR2;
 
-    cfg->carrier_config.dl_bandwidth = get_supported_bw_mhz(mac->frequency_range,
-                                                            frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing,
-                                                            frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
+    int bw_index = get_supported_band_index(frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing,
+                                            mac->frequency_range,
+                                            frequencyInfoDL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
+    cfg->carrier_config.dl_bandwidth = get_supported_bw_mhz(mac->frequency_range, bw_index);
 
     cfg->carrier_config.dl_frequency = from_nrarfcn(mac->nr_band,
                                                     *scc->ssbSubcarrierSpacing,
@@ -284,9 +289,10 @@ static void config_common_ue(NR_UE_MAC_INST_t *mac,
     NR_FrequencyInfoUL_t *frequencyInfoUL = scc->uplinkConfigCommon->frequencyInfoUL;
     mac->p_Max = frequencyInfoUL->p_Max ? *frequencyInfoUL->p_Max : INT_MIN;
 
-    cfg->carrier_config.uplink_bandwidth = get_supported_bw_mhz(mac->frequency_range,
-                                                                frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing,
-                                                                frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
+    int bw_index = get_supported_band_index(frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->subcarrierSpacing,
+                                            mac->frequency_range,
+                                            frequencyInfoUL->scs_SpecificCarrierList.list.array[0]->carrierBandwidth);
+    cfg->carrier_config.uplink_bandwidth = get_supported_bw_mhz(mac->frequency_range, bw_index);
 
     long *UL_pointA = NULL;
     if (frequencyInfoUL->absoluteFrequencyPointA)
@@ -978,6 +984,13 @@ static void setup_puschconfig(NR_UE_MAC_INST_t *mac, NR_PUSCH_Config_t *source, 
                   struct NR_UCI_OnPUSCH__betaOffsets);
     }
   }
+  if (source->ext2) {
+    if (!target->ext2)
+      target->ext2 = calloc(1, sizeof(*target->ext2));
+    UPDATE_IE(target->ext2->harq_ProcessNumberSizeDCI_0_1_r17, source->ext2->harq_ProcessNumberSizeDCI_0_1_r17, long);
+  } else if (target->ext2) {
+    free_and_zero(target->ext2->harq_ProcessNumberSizeDCI_0_1_r17);
+  }
 }
 
 static void configure_csi_resourcemapping(NR_CSI_RS_ResourceMapping_t *target, NR_CSI_RS_ResourceMapping_t *source)
@@ -1125,6 +1138,13 @@ static void setup_pdschconfig(NR_PDSCH_Config_t *source, NR_PDSCH_Config_t *targ
                            asn_DEF_NR_ZP_CSI_RS_ResourceSet);
   AssertFatal(source->aperiodic_ZP_CSI_RS_ResourceSetsToAddModList == NULL, "Not handled\n");
   AssertFatal(source->sp_ZP_CSI_RS_ResourceSetsToAddModList == NULL, "Not handled\n");
+  if (source->ext3) {
+    if (!target->ext3)
+      target->ext3 = calloc(1, sizeof(*target->ext3));
+    UPDATE_IE(target->ext3->harq_ProcessNumberSizeDCI_1_1_r17, source->ext3->harq_ProcessNumberSizeDCI_1_1_r17, long);
+  } else if (target->ext3) {
+    free_and_zero(target->ext3->harq_ProcessNumberSizeDCI_1_1_r17);
+  }
 }
 
 static void setup_sr_resource(NR_SchedulingRequestResourceConfig_t *target, NR_SchedulingRequestResourceConfig_t *source)
@@ -1488,6 +1508,11 @@ static void configure_common_BWP_ul(NR_UE_MAC_INST_t *mac, int bwp_id, NR_BWP_Up
     bwp->cyclicprefix = ul_genericParameters->cyclicPrefix;
     bwp->BWPSize = NRRIV2BW(ul_genericParameters->locationAndBandwidth, MAX_BWP_SIZE);
     bwp->BWPStart = NRRIV2PRBOFFSET(ul_genericParameters->locationAndBandwidth, MAX_BWP_SIZE);
+    // For power calculations assume the UE channel is the smallest channel that can support the BWP
+    int bw_index = get_smallest_supported_bandwidth_index(bwp->scs, mac->frequency_range, bwp->BWPSize);
+    bwp->channel_bandwidth = get_supported_bw_mhz(mac->frequency_range, bw_index);
+    // Minumum transmission power depends on bandwidth, precalculate it here
+    bwp->P_CMIN = nr_get_Pcmin(bw_index);
     if (bwp_id == 0) {
       mac->sc_info.initial_ul_BWPSize = bwp->BWPSize;
       mac->sc_info.initial_ul_BWPStart = bwp->BWPStart;
@@ -1513,10 +1538,8 @@ static void configure_common_BWP_ul(NR_UE_MAC_INST_t *mac, int bwp_id, NR_BWP_Up
       }
       if (ul_common->pusch_ConfigCommon->present == NR_SetupRelease_PUSCH_ConfigCommon_PR_release) {
         asn1cFreeStruc(asn_DEF_NR_PUSCH_TimeDomainResourceAllocationList, bwp->tdaList_Common);
-        free(bwp->msg3_DeltaPreamble);
-        bwp->msg3_DeltaPreamble = NULL;
-        free(bwp->p0_NominalWithGrant);
-        bwp->p0_NominalWithGrant = NULL;
+        free_and_zero(bwp->msg3_DeltaPreamble);
+        free_and_zero(bwp->p0_NominalWithGrant);
       }
     }
   }
@@ -1803,6 +1826,64 @@ static uint32_t nr_get_sf_periodicBSRTimer(long periodicBSR)
   return timer;
 }
 
+static uint32_t get_data_inactivity_timer(long setup)
+{
+  uint32_t timer_s = 0;
+  switch (setup) {
+    case NR_DataInactivityTimer_s1 :
+      timer_s = 1;
+      break;
+    case NR_DataInactivityTimer_s2 :
+      timer_s = 2;
+      break;
+    case NR_DataInactivityTimer_s3 :
+      timer_s = 3;
+      break;
+    case NR_DataInactivityTimer_s5 :
+      timer_s = 5;
+      break;
+    case NR_DataInactivityTimer_s7 :
+      timer_s = 7;
+      break;
+    case NR_DataInactivityTimer_s10 :
+      timer_s = 10;
+      break;
+    case NR_DataInactivityTimer_s15 :
+      timer_s = 15;
+      break;
+    case NR_DataInactivityTimer_s20 :
+      timer_s = 20;
+      break;
+    case NR_DataInactivityTimer_s40 :
+      timer_s = 40;
+      break;
+    case NR_DataInactivityTimer_s50 :
+      timer_s = 50;
+      break;
+    case NR_DataInactivityTimer_s60 :
+      timer_s = 60;
+      break;
+    case NR_DataInactivityTimer_s80 :
+      timer_s = 80;
+      break;
+    case NR_DataInactivityTimer_s100 :
+      timer_s = 100;
+      break;
+    case NR_DataInactivityTimer_s120 :
+      timer_s = 120;
+      break;
+    case NR_DataInactivityTimer_s150 :
+      timer_s = 150;
+      break;
+    case NR_DataInactivityTimer_s180 :
+      timer_s = 180;
+      break;
+    default :
+      AssertFatal(false, "Invalid data inactivity timer\n");
+  }
+  return timer_s;
+}
+
 static void configure_maccellgroup(NR_UE_MAC_INST_t *mac, const NR_MAC_CellGroupConfig_t *mcg)
 {
   NR_UE_SCHEDULING_INFO *si = &mac->scheduling_info;
@@ -1868,7 +1949,34 @@ static void configure_maccellgroup(NR_UE_MAC_INST_t *mac, const NR_MAC_CellGroup
     }
   }
   if (mcg->phr_Config) {
-    // TODO configuration when PHR is implemented
+    nr_phr_info_t *phr_info = &si->phr_info;
+    phr_info->is_configured = mcg->phr_Config->choice.setup != NULL;
+    if (phr_info->is_configured) {
+      int slots_per_subframe = nr_slots_per_frame[scs] / 10;
+      struct NR_PHR_Config *config = mcg->phr_Config->choice.setup;
+      AssertFatal(config->multiplePHR == 0, "mulitplePHR not supported");
+      phr_info->PathlossChange_db = config->phr_Tx_PowerFactorChange;
+      const int periodic_timer_sf_enum_to_sf[] = {10, 20, 50, 100, 200, 500, 1000, UINT_MAX};
+      int periodic_timer_sf = periodic_timer_sf_enum_to_sf[config->phr_PeriodicTimer];
+      nr_timer_setup(&phr_info->periodicPHR_Timer, periodic_timer_sf * slots_per_subframe, 1);
+      const int prohibit_timer_sf_enum_to_sf[] = {0, 10, 20, 50, 100, 200, 500, 1000};
+      int prohibit_timer_sf = prohibit_timer_sf_enum_to_sf[config->phr_ProhibitTimer];
+      nr_timer_setup(&phr_info->prohibitPHR_Timer, prohibit_timer_sf * slots_per_subframe, 1);
+      phr_info->phr_reporting = (1 << phr_cause_phr_config);
+    }
+  }
+
+  if (mcg->ext1 && mcg->ext1->dataInactivityTimer) {
+    struct NR_SetupRelease_DataInactivityTimer *setup_release = mcg->ext1->dataInactivityTimer;
+    if (setup_release->present == NR_SetupRelease_DataInactivityTimer_PR_release)
+      free(mac->data_inactivity_timer);
+    if (setup_release->present == NR_SetupRelease_DataInactivityTimer_PR_setup) {
+      if (!mac->data_inactivity_timer)
+        mac->data_inactivity_timer = calloc(1, sizeof(*mac->data_inactivity_timer));
+      uint32_t timer_s = get_data_inactivity_timer(setup_release->choice.setup); // timer in seconds
+      int scs = mac->current_DL_BWP->scs;
+      nr_timer_setup(mac->data_inactivity_timer, (timer_s * 1000) << scs, 1); // 1 slot update rate
+    }
   }
 }
 
@@ -2054,18 +2162,12 @@ static void configure_servingcell_info(NR_UE_MAC_INST_t *mac, NR_ServingCellConf
         break;
       case NR_SetupRelease_PDSCH_ServingCellConfig_PR_release:
         // release all configurations
-        if (sc_info->pdsch_CGB_Transmission)
-          asn1cFreeStruc(asn_DEF_NR_PDSCH_CodeBlockGroupTransmission, sc_info->pdsch_CGB_Transmission);
-        if (sc_info->xOverhead_PDSCH) {
-          free(sc_info->xOverhead_PDSCH);
-          sc_info->xOverhead_PDSCH = NULL;
-        }
-        if (sc_info->maxMIMO_Layers_PDSCH) {
-          free(sc_info->maxMIMO_Layers_PDSCH);
-          sc_info->maxMIMO_Layers_PDSCH = NULL;
-        }
-        if (sc_info->downlinkHARQ_FeedbackDisabled_r17)
-          asn1cFreeStruc(asn_DEF_NR_DownlinkHARQ_FeedbackDisabled_r17, sc_info->downlinkHARQ_FeedbackDisabled_r17);
+        asn1cFreeStruc(asn_DEF_NR_PDSCH_CodeBlockGroupTransmission, sc_info->pdsch_CGB_Transmission);
+        free_and_zero(sc_info->xOverhead_PDSCH);
+        free_and_zero(sc_info->maxMIMO_Layers_PDSCH);
+        free_and_zero(sc_info->nrofHARQ_ProcessesForPDSCH);
+        free_and_zero(sc_info->nrofHARQ_ProcessesForPDSCH_v1700);
+        asn1cFreeStruc(asn_DEF_NR_DownlinkHARQ_FeedbackDisabled_r17, sc_info->downlinkHARQ_FeedbackDisabled_r17);
         break;
       case NR_SetupRelease_PDSCH_ServingCellConfig_PR_setup: {
         NR_PDSCH_ServingCellConfig_t *pdsch_servingcellconfig = scd->pdsch_ServingCellConfig->choice.setup;
@@ -2077,13 +2179,17 @@ static void configure_servingcell_info(NR_UE_MAC_INST_t *mac, NR_ServingCellConf
         UPDATE_IE(sc_info->xOverhead_PDSCH, pdsch_servingcellconfig->xOverhead, long);
         if (pdsch_servingcellconfig->ext1 && pdsch_servingcellconfig->ext1->maxMIMO_Layers)
           UPDATE_IE(sc_info->maxMIMO_Layers_PDSCH, pdsch_servingcellconfig->ext1->maxMIMO_Layers, long);
+        UPDATE_IE(sc_info->nrofHARQ_ProcessesForPDSCH, pdsch_servingcellconfig->nrofHARQ_ProcessesForPDSCH, long);
+        if (pdsch_servingcellconfig->ext3)
+          UPDATE_IE(sc_info->nrofHARQ_ProcessesForPDSCH_v1700, pdsch_servingcellconfig->ext3->nrofHARQ_ProcessesForPDSCH_v1700, long);
+        else
+          free_and_zero(sc_info->nrofHARQ_ProcessesForPDSCH_v1700);
         if (pdsch_servingcellconfig->ext3 && pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17) {
           switch (pdsch_servingcellconfig->ext3->downlinkHARQ_FeedbackDisabled_r17->present) {
             case NR_SetupRelease_DownlinkHARQ_FeedbackDisabled_r17_PR_NOTHING:
               break;
             case NR_SetupRelease_DownlinkHARQ_FeedbackDisabled_r17_PR_release:
-              if (sc_info->downlinkHARQ_FeedbackDisabled_r17)
-                asn1cFreeStruc(asn_DEF_NR_DownlinkHARQ_FeedbackDisabled_r17, sc_info->downlinkHARQ_FeedbackDisabled_r17);
+              asn1cFreeStruc(asn_DEF_NR_DownlinkHARQ_FeedbackDisabled_r17, sc_info->downlinkHARQ_FeedbackDisabled_r17);
               break;
             case NR_SetupRelease_DownlinkHARQ_FeedbackDisabled_r17_PR_setup:
               if (sc_info->downlinkHARQ_FeedbackDisabled_r17 == NULL) {
@@ -2111,20 +2217,11 @@ static void configure_servingcell_info(NR_UE_MAC_INST_t *mac, NR_ServingCellConf
         break;
       case NR_SetupRelease_PUSCH_ServingCellConfig_PR_release:
         // release all configurations
-        if (sc_info->pusch_CGB_Transmission)
-          asn1cFreeStruc(asn_DEF_NR_PUSCH_CodeBlockGroupTransmission, sc_info->pusch_CGB_Transmission);
-        if (sc_info->rateMatching_PUSCH) {
-          free(sc_info->rateMatching_PUSCH);
-          sc_info->rateMatching_PUSCH = NULL;
-        }
-        if (sc_info->xOverhead_PUSCH) {
-          free(sc_info->xOverhead_PUSCH);
-          sc_info->xOverhead_PUSCH = NULL;
-        }
-        if (sc_info->maxMIMO_Layers_PUSCH) {
-          free(sc_info->maxMIMO_Layers_PUSCH);
-          sc_info->maxMIMO_Layers_PUSCH = NULL;
-        }
+        asn1cFreeStruc(asn_DEF_NR_PUSCH_CodeBlockGroupTransmission, sc_info->pusch_CGB_Transmission);
+        free_and_zero(sc_info->rateMatching_PUSCH);
+        free_and_zero(sc_info->xOverhead_PUSCH);
+        free_and_zero(sc_info->maxMIMO_Layers_PUSCH);
+        free_and_zero(sc_info->nrofHARQ_ProcessesForPUSCH_r17);
         break;
       case NR_SetupRelease_PUSCH_ServingCellConfig_PR_setup: {
         NR_PUSCH_ServingCellConfig_t *pusch_servingcellconfig = scd->uplinkConfig->pusch_ServingCellConfig->choice.setup;
@@ -2137,6 +2234,10 @@ static void configure_servingcell_info(NR_UE_MAC_INST_t *mac, NR_ServingCellConf
                                      pusch_servingcellconfig->codeBlockGroupTransmission,
                                      NR_PUSCH_CodeBlockGroupTransmission_t,
                                      asn_DEF_NR_PUSCH_CodeBlockGroupTransmission);
+        if (pusch_servingcellconfig->ext3)
+          UPDATE_IE(sc_info->nrofHARQ_ProcessesForPUSCH_r17, pusch_servingcellconfig->ext3->nrofHARQ_ProcessesForPUSCH_r17, long);
+        else
+          free_and_zero(sc_info->nrofHARQ_ProcessesForPUSCH_r17);
         break;
       }
       default:
@@ -2220,10 +2321,8 @@ void release_ul_BWP(NR_UE_MAC_INST_t *mac, int index)
   asn1cFreeStruc(asn_DEF_NR_PUCCH_Config, bwp->pucch_Config);
   asn1cFreeStruc(asn_DEF_NR_PUCCH_ConfigCommon, bwp->pucch_ConfigCommon);
   asn1cFreeStruc(asn_DEF_NR_SRS_Config, bwp->srs_Config);
-  free(bwp->msg3_DeltaPreamble);
-  bwp->msg3_DeltaPreamble = NULL;
-  free(bwp->p0_NominalWithGrant);
-  bwp->p0_NominalWithGrant = NULL;
+  free_and_zero(bwp->msg3_DeltaPreamble);
+  free_and_zero(bwp->p0_NominalWithGrant);
   free(bwp);
 }
 

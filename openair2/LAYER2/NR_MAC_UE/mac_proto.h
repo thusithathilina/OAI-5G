@@ -173,7 +173,7 @@ void nr_ue_process_mac_pdu(NR_UE_MAC_INST_t *mac,nr_downlink_indication_t *dl_in
 
 int nr_write_ce_ulsch_pdu(uint8_t *mac_ce,
                           NR_UE_MAC_INST_t *mac,
-                          uint8_t power_headroom, // todo: NR_POWER_HEADROOM_CMD *power_headroom,
+                          NR_SINGLE_ENTRY_PHR_MAC_CE *power_headroom,
                           uint16_t *crnti,
                           NR_BSR_SHORT *truncated_bsr,
                           NR_BSR_SHORT *short_bsr,
@@ -193,7 +193,9 @@ uint8_t nr_ue_get_sdu(NR_UE_MAC_INST_t *mac,
                       sub_frame_t subframe,
                       uint8_t gNB_index,
                       uint8_t *ulsch_buffer,
-                      uint32_t buflen);
+                      uint32_t buflen,
+                      int16_t tx_power,
+                      int16_t P_CMAX);
 
 void set_harq_status(NR_UE_MAC_INST_t *mac,
                      uint8_t pucch_id,
@@ -248,6 +250,7 @@ float nr_get_Pcmax(int p_Max,
                    uint16_t nr_band,
                    frame_type_t frame_type,
                    frequency_range_t frequency_range,
+                   int channel_bandwidth_index,
                    int Qm,
                    bool powerBoostPi2BPSK,
                    int scs,
@@ -256,7 +259,7 @@ float nr_get_Pcmax(int p_Max,
                    int n_prbs,
                    int start_prb);
 
-float nr_get_Pcmin(int scs, int nr_band, int N_RB_UL);
+float nr_get_Pcmin(int bandwidth_index);
 
 int get_sum_delta_pucch(NR_UE_MAC_INST_t *mac, int slot, frame_t frame);
 

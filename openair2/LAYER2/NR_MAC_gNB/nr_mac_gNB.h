@@ -156,6 +156,8 @@ typedef struct nr_mac_config_t {
   //int pusch_TargetSNRx10;
   //int pucch_TargetSNRx10;
   nr_mac_timers_t timer_config;
+  int num_dlharq;
+  int num_ulharq;
 } nr_mac_config_t;
 
 typedef struct NR_preamble_ue {
@@ -690,6 +692,8 @@ typedef struct NR_bler_options {
 } NR_bler_options_t;
 
 typedef struct nr_mac_rrc_ul_if_s {
+  f1_reset_du_initiated_func_t f1_reset;
+  f1_reset_acknowledge_cu_initiated_func_t f1_reset_acknowledge;
   f1_setup_request_func_t f1_setup_request;
   gnb_du_configuration_update_t gnb_du_configuration_update;
   ue_context_setup_response_func_t ue_context_setup_response;
